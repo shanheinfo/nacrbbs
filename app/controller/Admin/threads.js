@@ -83,7 +83,6 @@ export default {
             Category = await global.db.query(`SELECT id,n_name,n_type,n_icon FROM n_class WHERE id IN (${CID.join(',')})`)
         }
         // 建立分类映射关系
-        const threadCategoryMap = {};
         for (let item of Tclist) {
             if (!threadCategoryMap[item.n_tid]) {
                 threadCategoryMap[item.n_tid] = [];
