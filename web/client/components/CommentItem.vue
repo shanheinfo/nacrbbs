@@ -48,10 +48,6 @@ const props = defineProps({
     }
 })
 
-/* 监听data */
-watch(() => props.data, (newVal, oldVal) => {
-    props.data = newVal
-}, { immediate: true, deep: true })
 const emit = defineEmits(['reply', 'like'])
 
 const formatTime = (timeStr) => {
