@@ -54,6 +54,16 @@
 
         <!-- 操作按钮 -->
         <div class="share-actions">
+            <button class="action-btn" @click="nativeShare" v-if="canNativeShare">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="18" cy="5" r="3"/>
+                    <circle cx="6" cy="12" r="3"/>
+                    <circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                分享链接
+            </button>
             <button class="action-btn" @click="downloadPoster">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -81,10 +91,25 @@ const props = defineProps({
 
 const posterRef = ref(null)
 let shareUrl = ref('')
+let canNativeShare = ref(false)
 onMounted(() => {
     shareUrl.value = window.location.href
-
+    canNativeShare.value = !!navigator.share
 })
+
+const nativeShare = async () => {
+    try {
+        await navigator.share({
+            title: props.data?.n_name || document.title,
+            text: props.data?.n_profile || '',
+            url: shareUrl.value
+        })
+    } catch (e) {
+        if (e.name !== 'AbortError') {
+            console.error('分享失败:', e)
+        }
+    }
+}
 
 const images = computed(() => {
     try {

@@ -275,6 +275,10 @@ const form = ref({
 })
 /* 评论 CommentThreads */
 const CommentThreads = async () => {
+    if (!form.value.n_html || !form.value.n_html.trim()) {
+        Message.warning('评论内容不能为空')
+        return
+    }
     try {
         const res = await useApiFetch().post('/api/CommentThreads', form.value)
         if (res.code == 200) {
