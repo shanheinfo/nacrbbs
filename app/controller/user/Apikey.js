@@ -22,20 +22,31 @@ const validateScopes = (scopesStr) => {
   return { valid: true, scopes }
 }
 
+/* 验证ID参数 */
+const validateId = (id) => {
+  if (!id || (typeof id !== 'number' && !/^\d+$/.test(String(id)))) {
+    return false
+  }
+  return true
+}
+
 export default {
     /* 获取当前用户的API密钥列表 */
     getApiKeys: (request, reply) => global.Fun(reply, async () => {
         const Ware = request.Ware;
         const pre = request.body;
         const SqlBuilder = new global.SqlBuilder();
-        const sql = SqlBuilder.add('n_key', pre.seach, 'like').add('n_uid', Ware.id).build();
+        const sql = SqlBuilder.add('n_uid', Ware.id).build();
         const res = await global.db.getPaginatedData('n_apikeys', sql.sql, sql.params, ['id', 'desc'], pre.page, pre.pagesize)
-        /* 隐藏完整key，仅显示前后几位 */
+        /* 隐藏完整key，仅显示前后几位，删除完整key字段 */
         if (res.data && res.data.length > 0) {
-          res.data = res.data.map(item => ({
-            ...item,
-            n_key_masked: item.n_key.substring(0, 6) + '****' + item.n_key.substring(item.n_key.length - 4)
-          }))
+          res.data = res.data.map(item => {
+            const { n_key, ...rest } = item
+            return {
+              ...rest,
+              n_key_masked: n_key.substring(0, 6) + '****' + n_key.substring(n_key.length - 4)
+            }
+          })
         }
         global.sendMsg(reply, 200, '获取成功', res.data, res.total);
     }),
@@ -50,6 +61,12 @@ export default {
         const Ware = request.Ware;
         const pre = request.body;
 
+        /* 验证密钥名称 */
+        if (!pre.n_name || !String(pre.n_name).trim()) {
+          return global.sendMsg(reply, 400, '请输入密钥名称');
+        }
+        const name = String(pre.n_name).trim().slice(0, 50)
+
         /* 验证权限范围 */
         const scopeResult = validateScopes(pre.n_scopes)
         if (!scopeResult.valid) {
@@ -57,7 +74,8 @@ export default {
         }
 
         /* 验证过期时间 */
-        if (pre.n_expires) {
+        let expiresValue = null
+        if (pre.n_expires && pre.n_expires !== 'null') {
           const expiresDate = new Date(pre.n_expires)
           if (isNaN(expiresDate.getTime())) {
             return global.sendMsg(reply, 400, '过期时间格式无效');
@@ -65,6 +83,7 @@ export default {
           if (expiresDate <= new Date()) {
             return global.sendMsg(reply, 400, '过期时间必须晚于当前时间');
           }
+          expiresValue = pre.n_expires
         }
 
         /* 限制每用户最多10个key */
@@ -73,19 +92,21 @@ export default {
           return global.sendMsg(reply, 400, '每个用户最多创建10个API密钥');
         }
 
-        /* 生成唯一key: nak_前缀 + 32位随机字符 */
-        const keyRaw = 'nak_' + global.Tools.generateComplexCode(32)
+        /* 生成唯一key: nak_前缀 + crypto随机32位字符 */
+        const crypto = await import('crypto')
+        const keyRaw = 'nak_' + crypto.randomBytes(24).toString('hex')
+
         let Form = {
             n_key: keyRaw,
             n_uid: Ware.id,
             n_time: new Date(),
             n_type: '1',
-            n_white: pre.n_white || '',
-            n_black: pre.n_black || '',
-            n_name: pre.n_name || '未命名密钥',
-            n_ipstatus: pre.n_ipstatus || '0',
+            n_white: '',
+            n_black: '',
+            n_name: name,
+            n_ipstatus: '0',
             n_scopes: scopeResult.scopes.join(','),
-            n_expires: pre.n_expires || null
+            n_expires: expiresValue
         }
 
         await global.db.insert('n_apikeys', Form)
@@ -98,22 +119,38 @@ export default {
         const Ware = request.Ware;
         const pre = request.body;
 
+        /* 验证ID */
+        if (!validateId(pre.id)) {
+          return global.sendMsg(reply, 400, '无效的密钥ID');
+        }
+
         /* 验证key归属 */
-        const existing = await global.db.query('SELECT * FROM n_apikeys WHERE id = ?', [pre.id])
+        const existing = await global.db.query('SELECT id, n_uid FROM n_apikeys WHERE id = ?', [pre.id])
         if (!existing || existing.length === 0) {
           return global.sendMsg(reply, 404, '密钥不存在');
         }
-        if (existing[0].n_uid !== Ware.id) {
+        if (Number(existing[0].n_uid) !== Number(Ware.id)) {
           return global.sendMsg(reply, 403, '无权限操作此密钥');
         }
 
         /* 构建更新字段，禁止修改key和uid */
         let Form = {}
-        if (pre.n_name !== undefined) Form.n_name = pre.n_name
-        if (pre.n_type !== undefined) Form.n_type = pre.n_type
-        if (pre.n_white !== undefined) Form.n_white = pre.n_white
-        if (pre.n_black !== undefined) Form.n_black = pre.n_black
-        if (pre.n_ipstatus !== undefined) Form.n_ipstatus = pre.n_ipstatus
+        if (pre.n_name !== undefined) Form.n_name = String(pre.n_name).trim().slice(0, 50)
+        if (pre.n_type !== undefined) {
+          /* 仅允许启用/禁用 */
+          if (!['0', '1'].includes(String(pre.n_type))) {
+            return global.sendMsg(reply, 400, '无效的状态值');
+          }
+          Form.n_type = String(pre.n_type)
+        }
+        if (pre.n_white !== undefined) Form.n_white = String(pre.n_white).slice(0, 500)
+        if (pre.n_black !== undefined) Form.n_black = String(pre.n_black).slice(0, 500)
+        if (pre.n_ipstatus !== undefined) {
+          if (!['0', '1'].includes(String(pre.n_ipstatus))) {
+            return global.sendMsg(reply, 400, '无效的IP状态值');
+          }
+          Form.n_ipstatus = String(pre.n_ipstatus)
+        }
 
         /* 验证并更新权限范围 */
         if (pre.n_scopes !== undefined) {
@@ -126,13 +163,18 @@ export default {
 
         /* 验证并更新过期时间 */
         if (pre.n_expires !== undefined) {
-          if (pre.n_expires) {
+          if (pre.n_expires && pre.n_expires !== 'null') {
             const expiresDate = new Date(pre.n_expires)
             if (isNaN(expiresDate.getTime())) {
               return global.sendMsg(reply, 400, '过期时间格式无效');
             }
+            if (expiresDate <= new Date()) {
+              return global.sendMsg(reply, 400, '过期时间必须晚于当前时间');
+            }
+            Form.n_expires = pre.n_expires
+          } else {
+            Form.n_expires = null
           }
-          Form.n_expires = pre.n_expires || null
         }
 
         if (Object.keys(Form).length === 0) {
@@ -148,12 +190,17 @@ export default {
         const Ware = request.Ware;
         const pre = request.body;
 
+        /* 验证ID */
+        if (!validateId(pre.id)) {
+          return global.sendMsg(reply, 400, '无效的密钥ID');
+        }
+
         /* 验证key归属 */
-        const existing = await global.db.query('SELECT * FROM n_apikeys WHERE id = ?', [pre.id])
+        const existing = await global.db.query('SELECT id, n_uid FROM n_apikeys WHERE id = ?', [pre.id])
         if (!existing || existing.length === 0) {
           return global.sendMsg(reply, 404, '密钥不存在');
         }
-        if (existing[0].n_uid !== Ware.id) {
+        if (Number(existing[0].n_uid) !== Number(Ware.id)) {
           return global.sendMsg(reply, 403, '无权限操作此密钥');
         }
 
