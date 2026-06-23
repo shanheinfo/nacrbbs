@@ -25,7 +25,7 @@ export default {
             // 获取分类信息
             if (Tclist.length > 0) {
                 const CID = Tclist.map(item => item.n_cid);
-                const Category = await global.db.query(`SELECT id,n_name,n_type,n_icon FROM n_class WHERE id IN (${CID.join(',')})`);
+                const Category = await global.db.query(`SELECT id,n_name,n_type,n_icon FROM n_class WHERE id IN (${CID.map(() => '?').join(',')})`, CID);
                 thread.category = Category;
             } else {
                 thread.category = [];

@@ -14,10 +14,6 @@ export default async function (request, reply) {
       return global.sendMsg(reply, verifyResult.code, verifyResult.msg);
     }
 
-    if (verifyResult.data.endtime < Date.now()) {
-      return global.sendMsg(reply, 401, 'token已过期');
-    }
-
     // 将用户信息挂载到 request
     request.Ware = verifyResult.data;
 

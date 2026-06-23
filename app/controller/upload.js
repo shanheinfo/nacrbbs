@@ -139,10 +139,9 @@ export default {
   
     /* 删除上传的文件 */
     deleteFile: (request, reply) => global.Fun(reply, async () => {
-        const { filename } = request.body || {};
-        
-        if (!filename) {
-            global.sendMsg(reply, 400, '文件名不能为空');
+        const filename = request.body?.filename;
+        if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+            global.sendMsg(reply, 400, '文件名不合法');
             return;
         }
         

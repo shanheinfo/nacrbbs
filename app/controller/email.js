@@ -8,6 +8,19 @@ export default {
             ['to', '收件人邮箱', 'required']
         ])) return false;
 
+        const ipKey = `ratelimit:email:ip:${request.ip}`;
+        const emailKey = `ratelimit:email:addr:${pre.to}`;
+        const ipCount = await global.redis.incr(ipKey);
+        if (ipCount === 1) await global.redis.expire(ipKey, 3600);
+        if (ipCount > 10) {
+            return global.sendMsg(reply, 429, '请求过于频繁，请稍后再试');
+        }
+        const emailCount = await global.redis.incr(emailKey);
+        if (emailCount === 1) await global.redis.expire(emailKey, 60);
+        if (emailCount > 1) {
+            return global.sendMsg(reply, 429, '验证码发送过于频繁，请60秒后再试');
+        }
+
         // 生成6位验证码
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresIn = 10; // 10分钟过期

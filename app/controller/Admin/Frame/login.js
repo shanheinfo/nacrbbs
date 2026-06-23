@@ -22,9 +22,7 @@ export default {
             return;
         }
 
-        let Token = global.AuthGenerateToken({
-            ...users[0], n_password: ''
-        }, global.CONFIG.adminToken.secretKey, global.CONFIG.adminToken.expiresIn)
+        let Token = global.AuthGenerateToken({id: users[0].id}, global.CONFIG.adminToken.secretKey, global.CONFIG.adminToken.expiresIn)
 
         global.sendMsg(reply, 200, '登录成功', Token);
     }),

@@ -21,6 +21,12 @@ export default {
             ['password', '密码', 'required']
         ])) return false;
 
+        const loginKey = `ratelimit:login:${request.ip}`;
+        const loginCount = await global.redis.incr(loginKey);
+        if (loginCount === 1) await global.redis.expire(loginKey, 900);
+        if (loginCount > 10) {
+            return global.sendMsg(reply, 429, '登录尝试过于频繁，请15分钟后再试');
+        }
 
         const users = await global.db.query('SELECT * FROM n_users where n_username = ?', [pre.username]);
         if (users.length === 0) {
@@ -32,9 +38,7 @@ export default {
             return;
         }
 
-        let Token = global.AuthGenerateToken({
-            ...users[0], n_password: ''
-        }, global.CONFIG.userToken.secretKey, global.CONFIG.userToken.expiresIn)
+        let Token = global.AuthGenerateToken({id: users[0].id}, global.CONFIG.userToken.secretKey, global.CONFIG.userToken.expiresIn)
 
         global.sendMsg(reply, 200, '登录成功', Token);
     }),
@@ -49,6 +53,12 @@ export default {
             ['password', '密码', 'required']
         ])) return false;
 
+        const regKey = `ratelimit:register:${request.ip}`;
+        const regCount = await global.redis.incr(regKey);
+        if (regCount === 1) await global.redis.expire(regKey, 3600);
+        if (regCount > 5) {
+            return global.sendMsg(reply, 429, '注册请求过于频繁，请稍后再试');
+        }
 
         const users = await global.db.query('SELECT * FROM n_users where n_username = ?', [pre.username]);
 
@@ -163,9 +173,7 @@ export default {
             users = await global.db.query('SELECT * FROM n_users where n_MiniProgramOpenid = ?', [res.openid]);
         }
 
-        let Token = global.AuthGenerateToken({
-            ...users[0], n_password: ''
-        }, global.CONFIG.userToken.secretKey, global.CONFIG.userToken.expiresIn)
+        let Token = global.AuthGenerateToken({id: users[0].id}, global.CONFIG.userToken.secretKey, global.CONFIG.userToken.expiresIn)
 
         global.sendMsg(reply, 200, '登录成功', Token);
     })

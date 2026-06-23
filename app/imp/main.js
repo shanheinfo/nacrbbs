@@ -107,6 +107,9 @@ try {
 }
 
 
+import { sanitizeHtml } from './sanitize.js';
+global.sanitizeHtml = sanitizeHtml;
+
 const Fun = async (reply, fun) => {
     try {
         // 传入的函数

@@ -20,19 +20,12 @@ export default async function (router) {
         /* 后台登录 login */
         await open.post('/adminlogin', 'Admin/Frame/login@login');
 
-        /* 文件上传接口 */
-        await open.post('/upload/image', 'upload@upImage');
-        await open.post('/upload/file', 'upload@upFile');
-
         /* 支付回调接口 PayNotify */
         await open.post('/PayNotify', 'user/Frame/orderPay@PayNotify');
         await open.get('/PayNotify', 'user/Frame/orderPay@PayNotify');
 
         /* 发送验证码（邮箱） */
         await open.post('/sendVerificationCode', 'email@sendVerificationCode');
-        /* 测试发信模式 sendTest */
-        await open.post('/sendEmailTest', 'email@sendTest');
-
         /* 获取支付方式列表 GetPayMethod */
         await open.post('/GetPayMethod', 'user/Frame/orderPay@GetPayMethod');
         /* 支付订单 PayOrder */
@@ -120,6 +113,10 @@ export default async function (router) {
         await open.post('/CommentThreads', 'user/threads@CommentThreads');
         /* 删除评论 DelComments */
         await open.post('/DelComments', 'user/threads@DelComment');
+
+        /* 文件上传接口 */
+        await open.post('/upload/image', 'upload@upImage');
+        await open.post('/upload/file', 'upload@upFile');
 
         /* 关注用户 LikeUser */
         await open.post('/LikeUser', 'user/Frame/info@LikeUser');
@@ -264,6 +261,9 @@ export default async function (router) {
         await open.post('/GetIndexStatistics', 'Admin/Frame/Statistics/index@GetIndexStatistics');
         /* 获取综合趋势数据 */
         await open.post('/GetComprehensiveTrend', 'Admin/Frame/Statistics/index@GetComprehensiveTrend');
+
+        /* 测试发信模式 sendTest */
+        await open.post('/sendEmailTest', 'email@sendTest');
 
         /* 获取勋章 getMedal */
         await open.post('/getMedal', 'Admin/medal@getMedal');

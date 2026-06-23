@@ -5,11 +5,12 @@ export default {
         const Ware = request.Ware;
         const pre = request.body;
 
+        const safeHtml = global.sanitizeHtml(pre.n_html);
         let Form = {
             n_name: pre.n_name,
             n_uid: Ware.id,
             n_time: new Date(),
-            n_html: pre.n_html,
+            n_html: safeHtml,
             n_read: 0,
             n_starts: 0,
             n_msgs: 0,
@@ -74,7 +75,7 @@ export default {
 
         let Form = {
             n_name: pre.n_name,
-            n_html: pre.n_html,
+            n_html: global.sanitizeHtml(pre.n_html),
             n_profile: pre.n_profile,
             n_permission: pre.n_permission,
             n_price: pre.n_price == null || pre.n_price == undefined || !pre.n_price || pre.n_price == '' || pre.n_price == 'null' ? 0 : pre.n_price,
@@ -181,6 +182,8 @@ export default {
             return global.sendMsg(reply, 400, '评论内容不能为空');
         }
 
+
+        pre.n_html = global.sanitizeHtml(pre.n_html);
 
         let from = {
             n_tid: pre.id,
