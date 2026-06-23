@@ -12,9 +12,14 @@ export default {
     /* 编辑用户信息 */
     edituser: (request, reply) => global.Fun(reply, async () => {
         const pre = request.body;
-        delete pre.n_password;
+        const allowedFields = ['id', 'n_nickname', 'n_avatar', 'n_sign', 'n_status', 'n_gid', 'n_email', 'n_phone'];
+        const updateData = {};
+        allowedFields.forEach(field => {
+            if (pre[field] !== undefined) updateData[field] = pre[field];
+        });
+        delete updateData.id;
 
-        await global.db.update('n_users', pre, 'id = ?', [pre.id])
+        await global.db.update('n_users', updateData, 'id = ?', [pre.id])
         global.sendMsg(reply, 200, '编辑成功');
     }),
     /* 删除用户 */
