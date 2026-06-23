@@ -20,7 +20,9 @@ export default defineNuxtConfig({
   modules: ['@pinia/nuxt'],
   plugins: ['~/plugins/arco',],
   runtimeConfig: {
-    
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://8.148.8.149:9999'
+    }
   },
   app: {
     pageTransition: {

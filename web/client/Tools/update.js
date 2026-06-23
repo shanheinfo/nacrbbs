@@ -1,5 +1,4 @@
 import { Message } from '@arco-design/web-vue';
-import Config from '../app-config.js'
 
 /* 通用上传函数 */
 const updatefun = (file, url, onProgress) => {
@@ -42,19 +41,16 @@ const updatefun = (file, url, onProgress) => {
 }
 
 export const upimg = async (file, onProgress) => {
-    console.log(file);
-    const res = await updatefun(file, Config.apiBase + '/api/upload/image', (percent) => {
-        console.log(percent);
+    const config = useRuntimeConfig()
+    const res = await updatefun(file, config.public.apiBase + '/api/upload/image', (percent) => {
         onProgress(percent)
     })
-    console.log(res);
     return res;
 
 }
 export const upfile = async (file, onProgress) => {
-
-    const res = await updatefun(file, Config.apiBase + '/api/upload/file', (percent) => {
-        console.log(percent);
+    const config = useRuntimeConfig()
+    const res = await updatefun(file, config.public.apiBase + '/api/upload/file', (percent) => {
         onProgress(percent)
     })
 

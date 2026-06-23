@@ -1,10 +1,8 @@
 // composables/useApiFetch.js
-import Config from '../app-config.js'
-
 export function useApiFetch() {
-  // const config = useRuntimeConfig()
+  const config = useRuntimeConfig()
   const token = useCookie('AToken').value
-  const apiBase = Config.apiBase
+  const apiBase = config.public.apiBase
   const toUrlEncoded = (obj) =>
     Object.keys(obj)
       .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(obj[key])}`)
