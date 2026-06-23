@@ -12,9 +12,10 @@
                     <a-input v-model="createForm.n_name" placeholder="密钥名称，如：自动化脚本" class="form-input" />
                     <div class="form-row">
                         <div class="form-label">权限范围</div>
-                        <div class="scope-grid">
+                        <a-spin v-if="scopesLoading" :size="16" />
+                        <div v-else class="scope-grid">
                             <a-checkbox v-for="(label, scope) in scopeOptions" :key="scope"
-                                v-model="scopeChecked[scope]" @change="updateScopes">
+                                v-model="scopeChecked[scope]">
                                 {{ label }}
                             </a-checkbox>
                         </div>
@@ -29,6 +30,7 @@
                             <a-radio value="custom">自定义</a-radio>
                         </a-radio-group>
                         <a-date-picker v-if="createForm.expireType === 'custom'" v-model="createForm.n_expires"
+                            :disabled-date="(current) => current && current < new Date()"
                             style="margin-left: 10px; width: 180px;" />
                     </div>
                     <a-button type="primary" @click="createKey" :loading="createLoading" long>
@@ -60,46 +62,54 @@
                     <h3>我的密钥</h3>
                 </div>
 
-                <div v-if="keyList.length > 0" class="key-list">
-                    <div v-for="item in keyList" :key="item.id" class="key-item">
-                        <div class="key-item-main">
-                            <div class="key-item-top">
-                                <span class="key-name">{{ item.n_name }}</span>
-                                <span v-if="isExpired(item)" class="key-badge badge-expired">已过期</span>
-                                <span v-else-if="item.n_type === '1'" class="key-badge badge-active">启用</span>
-                                <span v-else class="key-badge badge-disabled">禁用</span>
+                <a-spin v-if="listLoading" :size="20" style="display: block; text-align: center; padding: 40px 0;" />
+
+                <template v-else>
+                    <div v-if="keyList.length > 0" class="key-list">
+                        <div v-for="item in keyList" :key="item.id" class="key-item">
+                            <div class="key-item-main">
+                                <div class="key-item-top">
+                                    <span class="key-name">{{ item.n_name }}</span>
+                                    <span v-if="isExpired(item)" class="key-badge badge-expired">已过期</span>
+                                    <span v-else-if="String(item.n_type) === '1'" class="key-badge badge-active">启用</span>
+                                    <span v-else class="key-badge badge-disabled">禁用</span>
+                                </div>
+                                <div class="key-item-info">
+                                    <code class="key-masked">{{ item.n_key_masked }}</code>
+                                </div>
+                                <div class="key-item-meta">
+                                    <span v-if="item.n_expires" class="meta-item">
+                                        过期: {{ formatDateTime(item.n_expires) }}
+                                    </span>
+                                    <span v-else class="meta-item">永久有效</span>
+                                    <span v-if="item.n_scopes" class="meta-item">
+                                        权限: {{ formatScopes(item.n_scopes) }}
+                                    </span>
+                                    <span class="meta-item">
+                                        创建: {{ formatDate(item.n_time) }}
+                                    </span>
+                                    <span v-if="item.n_last_used_at" class="meta-item">
+                                        最后使用: {{ formatDateTime(item.n_last_used_at) }}
+                                    </span>
+                                </div>
                             </div>
-                            <div class="key-item-info">
-                                <code class="key-masked">{{ item.n_key_masked }}</code>
+                            <div class="key-item-actions">
+                                <a-button v-if="String(item.n_type) === '1' && !isExpired(item)" size="mini"
+                                    type="text" @click="toggleKey(item)">禁用</a-button>
+                                <a-button v-if="String(item.n_type) !== '1' && !isExpired(item)" size="mini"
+                                    type="text" status="success" @click="toggleKey(item)">启用</a-button>
+                                <a-popconfirm content="确认删除此密钥？删除后立即失效，不可恢复。" @ok="deleteKey(item.id)">
+                                    <a-button size="mini" status="danger" type="text">删除</a-button>
+                                </a-popconfirm>
                             </div>
-                            <div class="key-item-meta">
-                                <span v-if="item.n_expires" class="meta-item">
-                                    过期: {{ formatDate(item.n_expires) }}
-                                </span>
-                                <span v-else class="meta-item">永久有效</span>
-                                <span v-if="item.n_scopes" class="meta-item">
-                                    权限: {{ formatScopes(item.n_scopes) }}
-                                </span>
-                                <span class="meta-item">
-                                    创建: {{ formatDate(item.n_time) }}
-                                </span>
-                                <span v-if="item.n_last_used_at" class="meta-item">
-                                    最后使用: {{ formatDate(item.n_last_used_at) }}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="key-item-actions">
-                            <a-popconfirm content="确认删除此密钥？删除后立即失效，不可恢复。" @ok="deleteKey(item.id)">
-                                <a-button size="mini" status="danger" type="text">删除</a-button>
-                            </a-popconfirm>
                         </div>
                     </div>
-                </div>
 
-                <div v-else class="empty-state">
-                    <div class="empty-icon">🗝️</div>
-                    <p>暂无 API 密钥</p>
-                </div>
+                    <div v-else class="empty-state">
+                        <div class="empty-icon">🗝️</div>
+                        <p>暂无 API 密钥</p>
+                    </div>
+                </template>
 
                 <a-pagination v-if="pagination.total > 0" @change="getKeyList" @page-size-change="getKeyList"
                     v-model:current="pagination.page" v-model:pageSize="pagination.pagesize" :total="pagination.total"
@@ -112,31 +122,37 @@
 <script setup>
 import { Message } from '@arco-design/web-vue';
 
-/* 权限范围选项 */
+/* 权限范围选项 - 从服务端获取，formatScopes也用此数据 */
 const scopeOptions = ref({})
 const scopeChecked = ref({})
+const scopesLoading = ref(false)
+
 const initScopeOptions = async () => {
-    const res = await useApiFetch().post('/api/getApiScopes')
-    if (res.code === 200) {
-        scopeOptions.value = res.data || {}
-        /* 默认只勾选 threads:read */
-        const checked = {}
-        for (const key of Object.keys(res.data)) {
-            checked[key] = key === 'threads:read'
+    scopesLoading.value = true
+    try {
+        const res = await useApiFetch().post('/api/getApiScopes')
+        if (res.code === 200) {
+            scopeOptions.value = res.data || {}
+            /* 默认只勾选 threads:read */
+            const checked = {}
+            for (const key of Object.keys(res.data)) {
+                checked[key] = key === 'threads:read'
+            }
+            scopeChecked.value = checked
         }
-        scopeChecked.value = checked
+    } catch (e) {
+        Message.error('获取权限范围失败')
+    } finally {
+        scopesLoading.value = false
     }
 }
 initScopeOptions()
-
-const updateScopes = () => { /* checkbox 自动更新 scopeChecked */ }
 
 /* 创建表单 */
 const createForm = ref({
     n_name: '',
     expireType: 'never',
-    n_expires: '',
-    n_scopes: ''
+    n_expires: ''
 })
 
 const createLoading = ref(false)
@@ -146,8 +162,8 @@ const newKeyValue = ref('')
 /* 计算过期时间 */
 const getExpiresValue = () => {
     const type = createForm.value.expireType
-    if (type === 'never') return null
-    if (type === 'custom') return createForm.value.n_expires || null
+    if (type === 'never') return ''
+    if (type === 'custom') return createForm.value.n_expires || ''
 
     const now = new Date()
     const days = { '7d': 7, '30d': 30, '90d': 90 }
@@ -174,7 +190,7 @@ const createKey = async () => {
         const res = await useApiFetch().post('/api/addApiKeys', {
             n_name: createForm.value.n_name.trim(),
             n_scopes: selectedScopes.join(','),
-            n_expires: getExpiresValue()
+            n_expires: getExpiresValue() || undefined
         })
         if (res.code === 200) {
             newKeyValue.value = res.data.key
@@ -183,11 +199,19 @@ const createKey = async () => {
             createForm.value.n_name = ''
             createForm.value.expireType = 'never'
             createForm.value.n_expires = ''
+            /* 重置scope勾选为默认状态 */
+            const checked = {}
+            for (const key of Object.keys(scopeOptions.value)) {
+                checked[key] = key === 'threads:read'
+            }
+            scopeChecked.value = checked
             /* 刷新列表 */
             getKeyList()
         } else {
             Message.error(res.message || '创建失败')
         }
+    } catch (e) {
+        Message.error('创建失败，请检查网络连接')
     } finally {
         createLoading.value = false
     }
@@ -204,14 +228,19 @@ const copyKey = async () => {
         textArea.value = newKeyValue.value
         document.body.appendChild(textArea)
         textArea.select()
-        document.execCommand('copy')
+        const success = document.execCommand('copy')
         document.body.removeChild(textArea)
-        Message.success('已复制到剪贴板')
+        if (success) {
+            Message.success('已复制到剪贴板')
+        } else {
+            Message.error('复制失败，请手动复制')
+        }
     }
 }
 
 /* Key 列表 */
 const keyList = ref([])
+const listLoading = ref(false)
 const pagination = ref({
     page: 1,
     pagesize: 10,
@@ -219,22 +248,55 @@ const pagination = ref({
 })
 
 const getKeyList = async () => {
-    const res = await useApiFetch().post('/api/getApiKeys', pagination.value)
-    if (res.code === 200) {
-        keyList.value = res.data || []
-        pagination.value.total = res.total || 0
+    listLoading.value = true
+    try {
+        const res = await useApiFetch().post('/api/getApiKeys', {
+            page: pagination.value.page,
+            pagesize: pagination.value.pagesize
+        })
+        if (res.code === 200) {
+            keyList.value = res.data || []
+            pagination.value.total = res.total || 0
+        }
+    } catch (e) {
+        Message.error('获取密钥列表失败')
+    } finally {
+        listLoading.value = false
     }
 }
 getKeyList()
 
+/* 启用/禁用 Key */
+const toggleKey = async (item) => {
+    const newType = String(item.n_type) === '1' ? '0' : '1'
+    try {
+        const res = await useApiFetch().post('/api/editApiKeys', {
+            id: item.id,
+            n_type: newType
+        })
+        if (res.code === 200) {
+            Message.success(newType === '1' ? '已启用' : '已禁用')
+            getKeyList()
+        } else {
+            Message.error(res.message || '操作失败')
+        }
+    } catch (e) {
+        Message.error('操作失败，请检查网络连接')
+    }
+}
+
 /* 删除 Key */
 const deleteKey = async (id) => {
-    const res = await useApiFetch().post('/api/deleApiKeys', { id })
-    if (res.code === 200) {
-        Message.success('删除成功')
-        getKeyList()
-    } else {
-        Message.error(res.message || '删除失败')
+    try {
+        const res = await useApiFetch().post('/api/deleApiKeys', { id })
+        if (res.code === 200) {
+            Message.success('删除成功')
+            getKeyList()
+        } else {
+            Message.error(res.message || '删除失败')
+        }
+    } catch (e) {
+        Message.error('删除失败，请检查网络连接')
     }
 }
 
@@ -251,20 +313,22 @@ const formatDate = (dateStr) => {
     return d.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }
 
-const SCOPE_LABELS = {
-    'threads:read': '读取帖子',
-    'threads:write': '发布/编辑帖子',
-    'threads:delete': '删除帖子',
-    'threads:like': '点赞帖子',
-    'comments:read': '读取评论',
-    'comments:write': '发表评论',
-    'comments:delete': '删除评论',
-    'user:read': '读取用户信息',
+const formatDateTime = (dateStr) => {
+    if (!dateStr) return '-'
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return '-'
+    return d.toLocaleString('zh-CN', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+    })
 }
 
 const formatScopes = (scopesStr) => {
     if (!scopesStr) return '-'
-    return scopesStr.split(',').map(s => SCOPE_LABELS[s.trim()] || s.trim()).join('、')
+    return scopesStr.split(',').map(s => {
+        const trimmed = s.trim()
+        return scopeOptions.value[trimmed] || trimmed
+    }).join('、')
 }
 </script>
 
@@ -450,6 +514,8 @@ const formatScopes = (scopesStr) => {
     .key-item-actions {
         flex-shrink: 0;
         margin-left: 12px;
+        display: flex;
+        gap: 4px;
     }
 }
 
