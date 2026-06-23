@@ -66,20 +66,26 @@ export default {
             return
         }
         let ordeSql = ``
+        let ordeParams = []
         if (pre.cid) {
-            ordeSql = ` and id in (select n_tid from n_tclist where n_cid = ${pre.cid} and n_type = 1)`
+            ordeSql += ` and id in (select n_tid from n_tclist where n_cid = ? and n_type = 1)`
+            ordeParams.push(pre.cid)
         }
         if (pre.cidt) {
-            ordeSql = ` and id in (select n_tid from n_tclist where n_cid = ${pre.cidt} and n_type = 2)`
+            ordeSql += ` and id in (select n_tid from n_tclist where n_cid = ? and n_type = 2)`
+            ordeParams.push(pre.cidt)
         }
         if (pre.isMyLike) {
-            ordeSql += ` and n_uid in (select n_tid from n_user_like where n_uid = ${Ware.id || 0})`
+            ordeSql += ` and n_uid in (select n_tid from n_user_like where n_uid = ?)`
+            ordeParams.push(Ware.id || 0)
         }
         if (pre.ismy) {
-            ordeSql += ` and n_uid = ${Ware.id || 0}`
+            ordeSql += ` and n_uid = ?`
+            ordeParams.push(Ware.id || 0)
         }
         if (pre.isMyBuy) {
-            ordeSql += ` and id in (select n_tid from n_threads_buy where n_uid = ${Ware.id || 0})`
+            ordeSql += ` and id in (select n_tid from n_threads_buy where n_uid = ?)`
+            ordeParams.push(Ware.id || 0)
         }
         const SqlBuilder = new global.SqlBuilder();
         const sql = SqlBuilder
@@ -88,7 +94,7 @@ export default {
             .add('n_haveimage', pre.image)
             .add('n_havevideo', pre.video)
             .build();
-        const res = await global.db.getPaginatedData('n_threads', sql.sql + ordeSql, sql.params, [pre.sort ?? 'id', pre.sortType ?? 'desc'], pre.page, pre.pagesize)
+        const res = await global.db.getPaginatedData('n_threads', sql.sql + ordeSql, [...sql.params, ...ordeParams], [pre.sort ?? 'id', pre.sortType ?? 'desc'], pre.page, pre.pagesize)
         let Userid = []
         for (let a in res.data) {
             Userid.push(res.data[a].n_uid)
@@ -97,7 +103,12 @@ export default {
         
 
         /* 获取分类以及话题 */
-        const Tclist = await global.db.query(`SELECT n_cid,n_tid FROM n_tclist WHERE n_tid IN (${res.data.map(item => item.id).join(',')})`)
+        if (res.data.length === 0) {
+            global.sendMsg(reply, 200, '获取成功', [], 0);
+            return;
+        }
+        const threadIds = res.data.map(item => item.id)
+        const Tclist = await global.db.query(`SELECT n_cid,n_tid FROM n_tclist WHERE n_tid IN (${threadIds.map(() => '?').join(',')})`, threadIds)
         let CID = []
         for (let a in Tclist) {
             CID.push(Tclist[a].n_cid)
@@ -105,7 +116,7 @@ export default {
 
         if (CID.length > 0) {
             /* 获取分类 */
-            const Category = await global.db.query(`SELECT id,n_name,n_type,n_icon FROM n_class WHERE id IN (${CID.join(',')})`)
+            const Category = await global.db.query(`SELECT id,n_name,n_type,n_icon FROM n_class WHERE id IN (${CID.map(() => '?').join(',')})`, CID)
             // 建立分类映射关系
             const threadCategoryMap = {};
             for (let item of Tclist) {
@@ -149,15 +160,17 @@ export default {
         /* 获取评论列表 */
         const SqlBuilder = new global.SqlBuilder();
         let ordeSql = ``
+        let ordeParams = []
         if (pre.ismy) {
-            ordeSql += ` and n_uid = ${Ware.id || 0}`
+            ordeSql += ` and n_uid = ?`
+            ordeParams.push(Ware.id || 0)
         }
 
         const sql = SqlBuilder
             .add('n_tid', pre.id)
             .add('n_uid', pre.uid)
             .build();
-        const res = await global.db.getPaginatedData('n_comment', sql.sql + ordeSql, sql.params, ['id', 'desc'], pre.page, pre.pagesize)
+        const res = await global.db.getPaginatedData('n_comment', sql.sql + ordeSql, [...sql.params, ...ordeParams], ['id', 'desc'], pre.page, pre.pagesize)
         /* 获取用户信息 */
         let Userid = []
         let Tid = []
@@ -165,7 +178,11 @@ export default {
             Userid.push(res.data[a].n_uid)
             Tid.push(res.data[a].n_tid)
         }
-        const User = await global.db.query(`SELECT id,n_nickname,n_avatar FROM n_users WHERE id IN (${Userid.join(',')})`)
+        if (Userid.length === 0) {
+            global.sendMsg(reply, 200, '获取成功', [], 0);
+            return;
+        }
+        const User = await global.db.query(`SELECT id,n_nickname,n_avatar FROM n_users WHERE id IN (${Userid.map(() => '?').join(',')})`, Userid)
         // 将用户信息添加到评论数据中
         const userMap = User.reduce((acc, user) => {
             acc[user.id] = user;
@@ -179,7 +196,7 @@ export default {
 
         if (pre.uid) {
             /* 获取帖子信息 */
-            const Thread = await global.db.query(`SELECT * FROM n_threads WHERE id IN (${Tid.join(',')})`)
+            const Thread = await global.db.query(`SELECT * FROM n_threads WHERE id IN (${Tid.map(() => '?').join(',')})`, Tid)
             const threadMap = Thread.reduce((acc, thread) => {
                 acc[thread.id] = thread;
                 return acc;

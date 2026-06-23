@@ -51,22 +51,25 @@ export default {
         const SqlBuilder = new global.SqlBuilder();
 
         let OSql = ``
+        let OParams = []
         /* 请求我的粉丝 */
         if(pre.uid == 'me'){
             pre.uid = Ware.id;
         }
         if (pre.followers && pre.uid) {
-            OSql = OSql + ` and id in (select n_uid from n_user_like where n_tid = ${pre.uid})`
+            OSql = OSql + ` and id in (select n_uid from n_user_like where n_tid = ?)`
+            OParams.push(pre.uid)
         }
         /* 请求我的关注 */
         if (pre.following && pre.uid) {
-            OSql = OSql + ` and id in (select n_tid from n_user_like where n_uid = ${pre.uid})`
+            OSql = OSql + ` and id in (select n_tid from n_user_like where n_uid = ?)`
+            OParams.push(pre.uid)
         }
         const sql = SqlBuilder
             .add('n_name', pre.seach, 'like')
             .add('id', Ware && Ware.id ? Ware.id : 0, '!=')
             .build();
-        const res = await global.db.getPaginatedData('n_users', sql.sql + OSql, sql.params, ['id', 'desc'], pre.page, pre.pagesize);
+        const res = await global.db.getPaginatedData('n_users', sql.sql + OSql, [...sql.params, ...OParams], ['id', 'desc'], pre.page, pre.pagesize);
 
         /* 批量获取所有用户的统计数据 */
         if (res.data && res.data.length > 0) {
