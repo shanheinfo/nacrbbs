@@ -1,4 +1,13 @@
 import { calculatePrice, formatOrderGoods, getTransporter, upPayNotify, getOrderNo } from './logic.js'
+
+const ALLOWED_PAY_CODES = /^[a-zA-Z0-9_-]+$/;
+
+function validatePayCode(code) {
+    if (!code || !ALLOWED_PAY_CODES.test(code)) {
+        throw new Error('无效的支付方式代码');
+    }
+    return code;
+}
 class PayService {
     constructor() {
         this.transporters = new Map(); // 缓存多个transporter实例
@@ -91,8 +100,7 @@ class PayService {
             }
             // console.log(transporter);
 
-            let path = './' + transporter.n_code + '/index.js'
-            console.log(path);
+            let path = './' + validatePayCode(transporter.n_code) + '/index.js'
             
             // 动态导入模块
             const module = await import(path);
@@ -213,7 +221,7 @@ class PayService {
             }
 
 
-            let path = './' + order[0].n_paycode + '/index.js'
+            let path = './' + validatePayCode(order[0].n_paycode) + '/index.js'
             let res = {
                 code: 0,
                 msg: 'success'
