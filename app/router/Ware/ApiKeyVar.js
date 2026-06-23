@@ -16,8 +16,11 @@ export default async function (request, reply) {
       return global.sendMsg(reply, 401, '缺少ApiKey');
     }
 
-    /* 查询key信息 */
-    const keyInfo = await global.db.query('SELECT * FROM n_apikeys WHERE n_key = ? AND n_type = 1', [apiKey])
+    /* 查询key信息，仅查询必要字段 */
+    const keyInfo = await global.db.query(
+      'SELECT id, n_uid, n_key, n_type, n_expires, n_ipstatus, n_white, n_black, n_scopes FROM n_apikeys WHERE n_key = ? AND n_type = 1',
+      [apiKey]
+    )
 
     if (!keyInfo || keyInfo.length === 0) {
       return global.sendMsg(reply, 401, '无效的ApiKey');
@@ -33,10 +36,12 @@ export default async function (request, reply) {
       }
     }
 
+    /* 获取客户端IP：仅使用 request.ip（由Fastify trust proxy配置决定），不信任客户端可伪造的x-forwarded-for */
+    const clientIp = request.ip || ''
+
     /* 检查IP白名单 */
     if (key.n_ipstatus === '1' && key.n_white) {
-      const clientIp = request.ip || request.headers['x-forwarded-for'] || ''
-      const whiteList = key.n_white.split(',').map(s => s.trim()).filter(Boolean)
+      const whiteList = key.n_white.split(',').map(s => s.trim()).filter(s => s && s !== 'null')
       if (whiteList.length > 0 && !whiteList.includes(clientIp)) {
         return global.sendMsg(reply, 403, 'IP不在白名单中');
       }
@@ -44,8 +49,7 @@ export default async function (request, reply) {
 
     /* 检查IP黑名单 */
     if (key.n_black) {
-      const clientIp = request.ip || request.headers['x-forwarded-for'] || ''
-      const blackList = key.n_black.split(',').map(s => s.trim()).filter(Boolean)
+      const blackList = key.n_black.split(',').map(s => s.trim()).filter(s => s && s !== 'null')
       if (blackList.includes(clientIp)) {
         return global.sendMsg(reply, 403, 'IP已被封禁');
       }
@@ -54,15 +58,17 @@ export default async function (request, reply) {
     /* 解析权限范围 */
     const scopes = key.n_scopes ? key.n_scopes.split(',').map(s => s.trim()).filter(Boolean) : []
 
-    /* 检查请求路径是否在权限范围内 */
-    const url = request.url
-    const requiredScope = SCOPE_ROUTE_MAP[url]
+    /* 检查请求路径是否在权限范围内 - 使用 pathname 避免查询字符串绕过 */
+    const pathname = new URL(request.url, 'http://localhost').pathname
+    const requiredScope = SCOPE_ROUTE_MAP[pathname]
     if (requiredScope && !scopes.includes(requiredScope)) {
       return global.sendMsg(reply, 403, `ApiKey缺少权限: ${requiredScope}`);
     }
 
-    /* 更新最后使用时间（异步，不阻塞请求） */
-    global.db.query('UPDATE n_apikeys SET n_last_used_at = ? WHERE id = ?', [new Date(), key.id]).catch(() => {})
+    /* 更新最后使用时间（异步，不阻塞请求，记录错误日志） */
+    global.db.query('UPDATE n_apikeys SET n_last_used_at = ? WHERE id = ?', [new Date(), key.id]).catch(err => {
+      console.error('更新ApiKey最后使用时间失败:', err)
+    })
 
     /* 挂载用户信息和key信息到 request.Ware */
     request.Ware = {
