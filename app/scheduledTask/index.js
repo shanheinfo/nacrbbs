@@ -2,6 +2,12 @@ const cron = require('node-cron');
 const fs = require('fs');
 const path = require('path');
 
+const taskRegistry = {};
+
+export function registerTask(name, fn) {
+    taskRegistry[name] = fn;
+}
+
 class scheduledTaskService {
     constructor(storagePath = './scheduledTasks.json') {
         this.TaskList = new Map();
@@ -164,13 +170,13 @@ class scheduledTaskService {
                 const tasksData = JSON.parse(data);
                 
                 for (const [taskId, taskData] of Object.entries(tasksData)) {
-                    // 将函数字符串转换回函数对象
                     let functionObj;
                     try {
-                        if (taskData.functionString) {
-                            functionObj = eval(`(${taskData.functionString})`);
-                        } else if (taskData.Function) {
-                            functionObj = taskData.Function;
+                        if (taskData.taskName && taskRegistry[taskData.taskName]) {
+                            functionObj = taskRegistry[taskData.taskName];
+                        } else if (taskData.taskName) {
+                            console.warn(`Task "${taskData.taskName}" not found in registry, skipping`);
+                            functionObj = () => {};
                         } else {
                             functionObj = () => {};
                         }
@@ -202,17 +208,16 @@ class scheduledTaskService {
             const tasksData = {};
             
             for (const [taskId, task] of this.TaskList) {
-                // 将函数转换为字符串以便存储
-                let functionString;
-                try {
-                    functionString = task.Function.toString();
-                } catch (error) {
-                    console.warn(`Failed to serialize function for task ${taskId}:`, error.message);
-                    functionString = '() => {}';
+                let taskName = null;
+                for (const [name, fn] of Object.entries(taskRegistry)) {
+                    if (task.Function === fn) {
+                        taskName = name;
+                        break;
+                    }
                 }
 
                 tasksData[taskId] = {
-                    functionString,
+                    taskName,
                     Time: task.Time,
                     Options: task.Options
                 };
