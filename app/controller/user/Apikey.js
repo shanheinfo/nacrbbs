@@ -1,4 +1,5 @@
-/* API Key 支持的权限范围定义 */
+import crypto from 'crypto'
+
 const VALID_SCOPES = {
   'threads:read': '读取帖子',
   'threads:write': '发布/编辑帖子',
@@ -9,6 +10,8 @@ const VALID_SCOPES = {
   'comments:delete': '删除评论',
   'user:read': '读取用户信息',
 }
+
+const hashKey = (key) => crypto.createHash('sha256').update(key).digest('hex')
 
 /* 验证权限范围列表 */
 const validateScopes = (scopesStr) => {
@@ -44,7 +47,7 @@ export default {
             const { n_key, ...rest } = item
             return {
               ...rest,
-              n_key_masked: n_key.substring(0, 6) + '****' + n_key.substring(n_key.length - 4)
+              n_key_masked: (item.n_key_prefix || 'nak_***') + '****'
             }
           })
         }
@@ -92,12 +95,11 @@ export default {
           return global.sendMsg(reply, 400, '每个用户最多创建10个API密钥');
         }
 
-        /* 生成唯一key: nak_前缀 + crypto随机32位字符 */
-        const crypto = await import('crypto')
         const keyRaw = 'nak_' + crypto.randomBytes(24).toString('hex')
 
         let Form = {
-            n_key: keyRaw,
+            n_key: hashKey(keyRaw),
+            n_key_prefix: keyRaw.substring(0, 8),
             n_uid: Ware.id,
             n_time: new Date(),
             n_type: '1',

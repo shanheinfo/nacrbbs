@@ -1,3 +1,5 @@
+import crypto from 'crypto'
+
 /* scope 与路径映射 */
 const SCOPE_ROUTE_MAP = {
   '/v1/threads/add': 'threads:write',
@@ -16,10 +18,11 @@ export default async function (request, reply) {
       return global.sendMsg(reply, 401, '缺少ApiKey');
     }
 
-    /* 查询key信息，仅查询必要字段 */
+    /* 查询key信息，使用哈希比对 */
+    const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex')
     const keyInfo = await global.db.query(
       'SELECT id, n_uid, n_key, n_type, n_expires, n_ipstatus, n_white, n_black, n_scopes FROM n_apikeys WHERE n_key = ? AND n_type = 1',
-      [apiKey]
+      [keyHash]
     )
 
     if (!keyInfo || keyInfo.length === 0) {
