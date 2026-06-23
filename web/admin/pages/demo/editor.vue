@@ -9,7 +9,7 @@
       <a-row :gutter="24">
         <a-col :span="12">
           <a-card title="JavaScript 编辑器" class="demo-card">
-            <MonacoEditor
+            <LazyMonacoEditor
               v-model="jsCode"
               language="javascript"
               :height="400"
@@ -22,7 +22,7 @@
 
         <a-col :span="12">
           <a-card title="JSON 配置编辑器" class="demo-card">
-            <MonacoEditor
+            <LazyMonacoEditor
               v-model="jsonCode"
               language="json"
               theme="vs"
@@ -38,7 +38,7 @@
       <a-row :gutter="24" style="margin-top: 24px;">
         <a-col :span="12">
           <a-card title="CSS 样式编辑器" class="demo-card">
-            <MonacoEditor
+            <LazyMonacoEditor
               v-model="cssCode"
               language="css"
               :height="350"
@@ -50,7 +50,7 @@
 
         <a-col :span="12">
           <a-card title="只读编辑器" class="demo-card">
-            <MonacoEditor
+            <LazyMonacoEditor
               v-model="readOnlyCode"
               language="typescript"
               :height="350"
