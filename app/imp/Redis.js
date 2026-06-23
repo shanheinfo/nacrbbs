@@ -153,7 +153,6 @@ export async function getCache(key) {
   const redis = getRedis();
   try {
     const cached = await redis.get(key);
-    console.log(key);
 
     return cached ? JSON.parse(cached) : null;
   } catch (error) {

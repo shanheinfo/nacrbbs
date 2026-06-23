@@ -282,7 +282,7 @@ export function validate(fields) {
 
 /* 验证码检验函数 */
 export async function verifyCode(code, redisKey) {
-  const config = await global.db.query('SELECT * FROM n_configuration');
+  const config = await global.getOrSetCache('bbs:config', 300, async () => { return await global.db.query('SELECT * FROM n_configuration'); });
   if (config[0].n_captcha_type === '1') {
 
     const storedCode = await global.RedisUtils.getCache('email:verify:' + redisKey);

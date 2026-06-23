@@ -1,6 +1,6 @@
 export default {
     webinfo: (request, reply) => global.Fun(reply, async () => {
-        const info = await global.db.query('SELECT * FROM n_configuration');
+        const info = await global.getOrSetCache('bbs:config', 300, async () => { return await global.db.query('SELECT * FROM n_configuration'); });
 
         delete info[0].n_email_host;
         delete info[0].n_email_port;

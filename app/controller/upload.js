@@ -5,7 +5,7 @@ export default {
     /* 上传图片 */
     upImage: (request, reply) => global.Fun(reply, async () => {
         // 读取上传配置
-        const config = await global.db.query('SELECT * FROM n_configuration');
+        const config = await global.getOrSetCache('bbs:config', 300, async () => { return await global.db.query('SELECT * FROM n_configuration'); });
         const configInfo = config[0] || {};
         
         // 配置参数
@@ -57,7 +57,7 @@ export default {
                 size: fileSize,
                 mimetype: data.mimetype,
                 path: `/public/upload/${newFilename}`,
-                url: `http://127.0.0.1:9999/public/upload/${newFilename}`,
+                url: (configInfo.n_web_url ? configInfo.n_web_url.replace(/\/+$/, '') : request.protocol + '://' + request.hostname) + '/public/upload/' + newFilename,
                 uploadTime: new Date().toISOString()
             };
             
@@ -72,7 +72,7 @@ export default {
     /* 上传文件 */
     upFile: (request, reply) => global.Fun(reply, async () => {
         // 读取上传配置
-        const config = await global.db.query('SELECT * FROM n_configuration');
+        const config = await global.getOrSetCache('bbs:config', 300, async () => { return await global.db.query('SELECT * FROM n_configuration'); });
         const configInfo = config[0] || {};
         
         // 配置参数
@@ -124,7 +124,7 @@ export default {
                 size: fileSize,
                 mimetype: data.mimetype,
                 path: `/public/upload/${newFilename}`,
-                url: `http://127.0.0.1:9999/public/upload/${newFilename}`,
+                url: (configInfo.n_web_url ? configInfo.n_web_url.replace(/\/+$/, '') : request.protocol + '://' + request.hostname) + '/public/upload/' + newFilename,
                 uploadTime: new Date().toISOString()
             };
             

@@ -3,7 +3,6 @@ import { readFileSync } from 'fs';
 
 class Mysql {
     static instance = null;
-    static conditions = [];
 
     constructor() {
         this.init();
@@ -20,7 +19,7 @@ class Mysql {
             port: config.port,
             waitForConnections: true,
             connectionLimit: 10,
-            multipleStatements: true,
+            multipleStatements: false,
             timezone: '+08:00',
             dateStrings: true
 
