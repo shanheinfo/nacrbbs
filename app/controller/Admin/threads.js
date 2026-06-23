@@ -35,11 +35,14 @@ export default {
             return
         }
         let ordeSql = ``
+        let ordeParam = []
         if (pre.cid) {
-            ordeSql = `and id in (select n_tid from n_tclist where n_cid = ${pre.cid} and n_type = 1)`
+            ordeSql = `and id in (select n_tid from n_tclist where n_cid = ? and n_type = 1)`
+            ordeParam = [Number(pre.cid)]
         }
         if (pre.cidt) {
-            ordeSql = `and id in (select n_tid from n_tclist where n_cid = ${pre.cidt} and n_type = 2)`
+            ordeSql = `and id in (select n_tid from n_tclist where n_cid = ? and n_type = 2)`
+            ordeParam = [Number(pre.cidt)]
         }
 
         const SqlBuilder = new global.SqlBuilder();
@@ -49,18 +52,16 @@ export default {
             .add('n_haveimage', pre.image)
             .add('n_havevideo', pre.video)
             .build();
-        const res = await global.db.getPaginatedData('n_threads', sql.sql + ordeSql, sql.params, [pre.sort ?? 'id', pre.sortType ?? 'desc'], pre.page, pre.pagesize)
+        const res = await global.db.getPaginatedData('n_threads', sql.sql + ordeSql, [...sql.params, ...ordeParam], [pre.sort ?? 'id', pre.sortType ?? 'desc'], pre.page, pre.pagesize)
         let Userid = []
         for (let a in res.data) {
             Userid.push(res.data[a].n_uid)
-
         }
-        const User = await global.db.query(`SELECT id,n_nickname,n_avatar FROM n_users WHERE id IN (${Userid.join(',')})`)
-        // 将用户信息添加到帖子数据中
-        const userMap = User.reduce((acc, user) => {
-            acc[user.id] = user;
-            return acc;
-        }, {});
+        let userMap = {}
+        if (Userid.length > 0) {
+            const User = await global.db.query(`SELECT id,n_nickname,n_avatar FROM n_users WHERE id IN (${Userid.join(',')})`)
+            userMap = User.reduce((acc, user) => { acc[user.id] = user; return acc; }, {});
+        }
 
         res.data = res.data.map(thread => {
             thread.user = userMap[thread.n_uid];
@@ -68,13 +69,19 @@ export default {
         });
 
         /* 获取分类以及话题 */
-        const Tclist = await global.db.query(`SELECT n_cid,n_tid FROM n_tclist WHERE n_tid IN (${res.data.map(item => item.id).join(',')})`)
+        let Tclist = []
+        let threadCategoryMap = {}
+        if (res.data.length > 0) {
+            Tclist = await global.db.query(`SELECT n_cid,n_tid FROM n_tclist WHERE n_tid IN (${res.data.map(item => item.id).join(',')})`)
+        }
         let CID = []
         for (let a in Tclist) {
             CID.push(Tclist[a].n_cid)
         }
-        /* 获取分类 */
-        const Category = await global.db.query(`SELECT id,n_name,n_type,n_icon FROM n_class WHERE id IN (${CID.join(',')})`)
+        let Category = []
+        if (CID.length > 0) {
+            Category = await global.db.query(`SELECT id,n_name,n_type,n_icon FROM n_class WHERE id IN (${CID.join(',')})`)
+        }
         // 建立分类映射关系
         const threadCategoryMap = {};
         for (let item of Tclist) {
@@ -177,24 +184,22 @@ export default {
             Userid.push(res.data[a].n_uid)
             Tid.push(res.data[a].n_tid)
         }
-        const User = await global.db.query(`SELECT id,n_nickname,n_avatar FROM n_users WHERE id IN (${Userid.join(',')})`)
-        // 将用户信息添加到评论数据中
-        const userMap = User.reduce((acc, user) => {
-            acc[user.id] = user;
-            return acc;
-        }, {});
+        let userMap = {}
+        if (Userid.length > 0) {
+            const User = await global.db.query(`SELECT id,n_nickname,n_avatar FROM n_users WHERE id IN (${Userid.join(',')})`)
+            userMap = User.reduce((acc, user) => { acc[user.id] = user; return acc; }, {});
+        }
 
         res.data = res.data.map(comment => {
             comment.user = userMap[comment.n_uid];
             return comment;
         });
 
-        /* 获取帖子信息 */
-        const Thread = await global.db.query(`SELECT * FROM n_threads WHERE id IN (${Tid.join(',')})`)
-        const threadMap = Thread.reduce((acc, thread) => {
-            acc[thread.id] = thread;
-            return acc;
-        }, {});
+        let threadMap = {}
+        if (Tid.length > 0) {
+            const Thread = await global.db.query(`SELECT * FROM n_threads WHERE id IN (${Tid.join(',')})`)
+            threadMap = Thread.reduce((acc, thread) => { acc[thread.id] = thread; return acc; }, {});
+        }
 
         res.data = res.data.map(comment => {
             comment.thread = threadMap[comment.n_tid];
@@ -222,11 +227,11 @@ export default {
         for (let a in res.data) {
             Tid.push(res.data[a].n_tid)
         }
-        const Thread = await global.db.query(`SELECT * FROM n_threads WHERE id IN (${Tid.join(',')})`)
-        const threadMap = Thread.reduce((acc, thread) => {
-            acc[thread.id] = thread;
-            return acc;
-        }, {});
+        let threadMap = {}
+        if (Tid.length > 0) {
+            const Thread = await global.db.query(`SELECT * FROM n_threads WHERE id IN (${Tid.join(',')})`)
+            threadMap = Thread.reduce((acc, thread) => { acc[thread.id] = thread; return acc; }, {});
+        }
 
         res.data = res.data.map(report => {
             report.thread = threadMap[report.n_tid];
