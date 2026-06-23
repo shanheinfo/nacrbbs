@@ -101,9 +101,16 @@ try {
     console.log('✅ Redis全局挂载成功');
 } catch (error) {
     console.error('❌ Redis初始化失败:', error);
-    // 即使Redis失败也不阻止应用启动，后续调用会提示初始化
     global.redis = null;
     global.RedisUtils = null;
+    global.getOrSetCache = async (_key, _ttl, fetchFn) => fetchFn();
+    global.setCache = async () => false;
+    global.getCache = async () => null;
+    global.deleteCache = async () => 0;
+    global.existsCache = async () => false;
+    global.RedisHash = class { static async set(){} static async get(){return null} static async getAll(){return{}} static async delete(){return 0} static async exists(){return false} };
+    global.RedisList = class { static async pushLeft(){return 0} static async pushRight(){return 0} static async popLeft(){return null} static async popRight(){return null} static async length(){return 0} static async range(){return[]} };
+    console.warn('⚠️ Redis降级模式：所有缓存操作将直接穿透到数据库');
 }
 
 
