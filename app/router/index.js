@@ -128,7 +128,29 @@ export default async function (router) {
         /* 获取勋章列表 getMedal */
         await open.post('/getMedalList', 'user/medal@getMedal');
 
+        /* API Key 管理 */
+        await open.post('/getApiKeys', 'user/Apikey@getApiKeys');
+        await open.post('/getApiScopes', 'user/Apikey@getApiScopes');
+        await open.post('/addApiKeys', 'user/Apikey@addApiKeys');
+        await open.post('/editApiKeys', 'user/Apikey@editApiKeys');
+        await open.post('/deleApiKeys', 'user/Apikey@deleApiKeys');
 
+    })
+
+    /* API Key 鉴权接口 - 仅通过 ApiKey header 鉴权，用于快捷操作 */
+    await router.group('/v1', ['ApiKeyVar'], async (open) => {
+        /* 发布帖子 */
+        await open.post('/threads/add', 'user/threads@AddThreads');
+        /* 编辑帖子 */
+        await open.post('/threads/edit', 'user/threads@EditThreads');
+        /* 删除帖子 */
+        await open.post('/threads/delete', 'user/threads@DelThreads');
+        /* 点赞帖子 */
+        await open.post('/threads/like', 'user/threads@LikeThreads');
+        /* 评论帖子 */
+        await open.post('/threads/comment', 'user/threads@CommentThreads');
+        /* 删除评论 */
+        await open.post('/comments/delete', 'user/threads@DelComment');
     })
 
     await router.group('/api', ['ATokenVar'], async (open) => {

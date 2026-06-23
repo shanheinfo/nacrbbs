@@ -1,3 +1,13 @@
+/* scope 与路径映射 */
+const SCOPE_ROUTE_MAP = {
+  '/v1/threads/add': 'threads:write',
+  '/v1/threads/edit': 'threads:write',
+  '/v1/threads/delete': 'threads:delete',
+  '/v1/threads/like': 'threads:like',
+  '/v1/threads/comment': 'comments:write',
+  '/v1/comments/delete': 'comments:delete',
+}
+
 export default async function (request, reply) {
   try {
     const apiKey = request.headers['apikey']
@@ -43,6 +53,16 @@ export default async function (request, reply) {
 
     /* 解析权限范围 */
     const scopes = key.n_scopes ? key.n_scopes.split(',').map(s => s.trim()).filter(Boolean) : []
+
+    /* 检查请求路径是否在权限范围内 */
+    const url = request.url
+    const requiredScope = SCOPE_ROUTE_MAP[url]
+    if (requiredScope && !scopes.includes(requiredScope)) {
+      return global.sendMsg(reply, 403, `ApiKey缺少权限: ${requiredScope}`);
+    }
+
+    /* 更新最后使用时间（异步，不阻塞请求） */
+    global.db.query('UPDATE n_apikeys SET n_last_used_at = ? WHERE id = ?', [new Date(), key.id]).catch(() => {})
 
     /* 挂载用户信息和key信息到 request.Ware */
     request.Ware = {
