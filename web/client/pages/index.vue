@@ -239,8 +239,7 @@ const GoUser = () => {
                     overflow: hidden;
 
                     .content {
-                        // background-color: #fff;
-                        overflow: hidden;
+                        overflow-y: auto;
                         margin-bottom: 20px;
                         height: calc(100vh);
                     }
@@ -400,9 +399,8 @@ const GoUser = () => {
                     overflow: hidden;
 
                     .content {
-                        // background-color: #fff;
                         max-height: calc(100% - 190px);
-                        overflow: hidden;
+                        overflow-y: auto;
                     }
 
 

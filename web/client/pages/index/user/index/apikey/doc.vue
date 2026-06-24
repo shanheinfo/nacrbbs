@@ -1,10 +1,25 @@
 <template>
     <div>
         <UserHeader title="API 接口文档"></UserHeader>
-        <div class="Page">
+        <div class="doc-layout">
+            <!-- 侧边目录 -->
+            <div class="doc-toc" :class="{ 'toc-fixed': tocFixed }">
+                <div class="toc-title">目录</div>
+                <nav>
+                    <a v-for="item in tocItems" :key="item.id"
+                       :href="'#' + item.id"
+                       :class="['toc-link', { 'toc-active': activeSection === item.id }]"
+                       @click.prevent="scrollToSection(item.id)">
+                        {{ item.label }}
+                    </a>
+                </nav>
+            </div>
+            <!-- 文档内容 -->
+            <div class="doc-content">
+                <div class="Page">
 
             <div class="doc-section">
-                <h2>1. 概述</h2>
+                <h2 id="sec-overview">1. 概述</h2>
                 <p>shanhe 论坛提供两套 API 接口：</p>
                 <ul>
                     <li><strong>公开接口</strong>（<code>/api/*</code>）：无需登录即可访问，部分接口携带 Token 后可获取更多数据</li>
@@ -13,7 +28,7 @@
             </div>
 
             <div class="doc-section">
-                <h2>2. 通用说明</h2>
+                <h2 id="sec-general">2. 通用说明</h2>
                 <h3>2.1 请求格式</h3>
                 <table>
                     <thead><tr><th>项目</th><th>说明</th></tr></thead>
@@ -50,7 +65,7 @@
             </div>
 
             <div class="doc-section">
-                <h2>3. 认证方式</h2>
+                <h2 id="sec-auth">3. 认证方式</h2>
 
                 <h3>3.1 用户Token认证（/api/* 接口）</h3>
                 <p>登录成功后获取 Token，通过 HTTP Header 传递：</p>
@@ -64,7 +79,7 @@
             </div>
 
             <div class="doc-section">
-                <h2>4. API Key 权限范围</h2>
+                <h2 id="sec-scopes">4. API Key 权限范围</h2>
                 <table>
                     <thead><tr><th>Scope</th><th>说明</th><th>对应接口</th></tr></thead>
                     <tbody>
@@ -81,7 +96,7 @@
             </div>
 
             <div class="doc-section">
-                <h2>5. 公开接口（/api/*）</h2>
+                <h2 id="sec-public">5. 公开接口（/api/*）</h2>
                 <p class="tip">以下接口无需 Token 即可访问，携带 Token 可获取额外数据（如是否已点赞、付费内容等）。</p>
 
                 <div class="api-item" v-for="api in publicApis" :key="api.path">
@@ -118,7 +133,7 @@
             </div>
 
             <div class="doc-section">
-                <h2>6. API Key 接口（/v1/*）</h2>
+                <h2 id="sec-keyapi">6. API Key 接口（/v1/*）</h2>
                 <p class="tip">以下接口必须通过 API Key 认证，Header 传递 <code>ApiKey</code>。</p>
 
                 <div class="api-item" v-for="api in keyApis" :key="api.path">
@@ -158,7 +173,7 @@
             </div>
 
             <div class="doc-section">
-                <h2>7. 完整请求示例</h2>
+                <h2 id="sec-examples">7. 完整请求示例</h2>
                 <h3>7.1 用户Token方式 - 获取我的信息</h3>
                 <div class="code-block"><pre>curl -X POST https://your-domain/api/myinfo \
   -H "Content-Type: application/x-www-form-urlencoded" \
@@ -182,12 +197,58 @@
   -d "n_html=这是一条评论"</pre></div>
             </div>
 
+            </div>
+        </div>
         </div>
     </div>
 </template>
 
 <script setup>
 const siteUrl = 'https://your-domain'
+
+/* 目录 */
+const tocItems = [
+    { id: 'sec-overview', label: '1. 概述' },
+    { id: 'sec-general', label: '2. 通用说明' },
+    { id: 'sec-auth', label: '3. 认证方式' },
+    { id: 'sec-scopes', label: '4. 权限范围' },
+    { id: 'sec-public', label: '5. 公开接口' },
+    { id: 'sec-keyapi', label: '6. API Key 接口' },
+    { id: 'sec-examples', label: '7. 请求示例' },
+]
+
+const activeSection = ref('sec-overview')
+const tocFixed = ref(false)
+
+const scrollToSection = (id) => {
+    const el = document.getElementById(id)
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        activeSection.value = id
+    }
+}
+
+onMounted(() => {
+    if (!process.client) return
+    const contentEl = document.querySelector('.doc-content')
+    if (!contentEl) return
+
+    /* 滚动监听：高亮当前目录项 */
+    const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+            if (entry.isIntersecting) {
+                activeSection.value = entry.target.id
+            }
+        }
+    }, { root: contentEl, rootMargin: '-60px 0px -80% 0px', threshold: 0 })
+
+    tocItems.forEach(item => {
+        const el = document.getElementById(item.id)
+        if (el) observer.observe(el)
+    })
+
+    onBeforeUnmount(() => observer.disconnect())
+})
 
 const publicApis = [
     {
@@ -707,8 +768,70 @@ const keyApis = [
 </script>
 
 <style lang="scss" scoped>
+.doc-layout {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    align-items: flex-start;
+}
+
+.doc-toc {
+    width: 180px;
+    flex-shrink: 0;
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px 14px;
+    border: 1px solid #e5e6eb;
+    position: sticky;
+    top: 80px;
+
+    &.toc-fixed {
+        position: sticky;
+        top: 80px;
+    }
+
+    .toc-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1d1d1f;
+        margin-bottom: 12px;
+    }
+
+    nav {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .toc-link {
+        display: block;
+        font-size: 13px;
+        color: #86909c;
+        text-decoration: none;
+        padding: 6px 10px;
+        border-radius: 8px;
+        transition: all 0.2s;
+        cursor: pointer;
+
+        &:hover {
+            color: #1d1d1f;
+            background: #f7f8fa;
+        }
+
+        &.toc-active {
+            color: #00b42a;
+            background: #e8ffea;
+            font-weight: 600;
+        }
+    }
+}
+
+.doc-content {
+    flex: 1;
+    min-width: 0;
+}
+
 .Page {
-    width: calc(100% - 40px);
     background-color: #fff;
     padding: 20px;
     border-radius: 20px;
@@ -882,8 +1005,15 @@ table {
 }
 
 @media (max-width: 768px) {
+    .doc-layout {
+        flex-direction: column;
+    }
+
+    .doc-toc {
+        display: none;
+    }
+
     .Page {
-        width: calc(100% - 20px);
         padding: 10px;
     }
 
