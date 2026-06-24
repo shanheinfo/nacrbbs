@@ -22,10 +22,12 @@ export default {
         ])) return false;
 
         const loginKey = `ratelimit:login:${request.ip}`;
-        const loginCount = await global.redis.incr(loginKey);
-        if (loginCount === 1) await global.redis.expire(loginKey, 900);
-        if (loginCount > 10) {
-            return global.sendMsg(reply, 429, '登录尝试过于频繁，请15分钟后再试');
+        if (global.redis) {
+            const loginCount = await global.redis.incr(loginKey);
+            if (loginCount === 1) await global.redis.expire(loginKey, 900);
+            if (loginCount > 10) {
+                return global.sendMsg(reply, 429, '登录尝试过于频繁，请15分钟后再试');
+            }
         }
 
         const users = await global.db.query('SELECT * FROM n_users where n_username = ?', [pre.username]);

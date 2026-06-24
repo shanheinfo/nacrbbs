@@ -1,7 +1,7 @@
 {
-    "password": "xxx",
-    "host": "202.xxx.xxx.49",
-    "port": 13669,
+    "password": "",
+    "host": "127.0.0.1",
+    "port": 6379,
     "db": 0,
     "max_connections": 10000,
     "max_reconnect_attempts": 10,

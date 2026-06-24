@@ -5,3 +5,5 @@
 /web/**/.env
 *.log
 .DS_Store
+app/config/database.json
+app/config/redis.json

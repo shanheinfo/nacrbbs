@@ -80,6 +80,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { Message } from '@arco-design/web-vue'
 const route = useRoute()
 const id = route.params.id
 const active = ref('1')

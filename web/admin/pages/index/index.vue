@@ -1,32 +1,5 @@
 <template>
     <div class="dashboard-container">
-        <!-- 项目信息卡片 -->
-        <div class="project-info-banner">
-            <div class="project-info-content">
-                <div class="project-title">
-                    <icon-github class="github-icon" />
-                    <span>NacrBBS 开源项目</span>
-                </div>
-                <div class="project-desc">
-                    开源轻量级论坛系统,欢迎 Star 支持
-                </div>
-            </div>
-            <div class="project-links">
-                <a-button type="outline" size="small" @click="openGitee">
-                    <template #icon>
-                        <icon-github />
-                    </template>
-                    Gitee
-                </a-button>
-                <a-button type="outline" size="small" @click="openGithub">
-                    <template #icon>
-                        <icon-github />
-                    </template>
-                    GitHub
-                </a-button>
-            </div>
-        </div>
-
         <!-- 页面标题 -->
         <div class="page-header">
             <div>
@@ -364,16 +337,6 @@ const handleRefresh = async () => {
         GetTrend(chartDays.value)
     ])
     Message.success('数据已刷新')
-}
-
-/* 打开 Gitee */
-const openGitee = () => {
-    window.open('https://gitee.com/wuaxcn/nacrbbs', '_blank')
-}
-
-/* 打开 GitHub */
-const openGithub = () => {
-    window.open('https://github.com/nacrcn/nacrbbs', '_blank')
 }
 
 /* 切换天数 */

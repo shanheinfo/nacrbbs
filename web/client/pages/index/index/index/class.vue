@@ -15,8 +15,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { Message } from '@arco-design/web-vue'
 
-/* 获取文章列表 GetThreads */
+/* 获取分类列表 GetCategory */
 const ThreadsList = ref([])
 const from = ref({
     page: 1,
@@ -30,7 +31,7 @@ const GetThreads = async () => {
             ThreadsList.value = res.data
             from.value.total = res.total
         } else {
-            Message.error(res.message || '获取文章列表失败')
+            Message.error(res.message || '获取分类列表失败')
         }
     } catch (error) {
         Message.error(error.message)

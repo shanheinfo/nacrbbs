@@ -214,6 +214,24 @@ const GetCommentList = async () => {
     }
 }
 
+/* 关注/取消关注用户 */
+const LikeUser = async () => {
+    loading.value = true
+    try {
+        const res = await useApiFetch().post('/api/LikeUser', { id: Users.value.id })
+        if (res.code == 200) {
+            Users.value.isLiked = !Users.value.isLiked
+            Users.value.followers = (Users.value.followers || 0) + (Users.value.isLiked ? 1 : -1)
+        } else {
+            Message.error(res.message || '操作失败')
+        }
+    } catch (error) {
+        Message.error(error.message)
+    } finally {
+        loading.value = false
+    }
+}
+
 onMounted(() => {
     GetCategory()
     GetTopicList()

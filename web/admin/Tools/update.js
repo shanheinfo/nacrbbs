@@ -9,6 +9,12 @@ const updatefun = (file, url, onProgress) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', url, true)
 
+    // 携带管理员Token，上传接口需要登录鉴权
+    const token = useCookie('AToken').value
+    if (token) {
+      xhr.setRequestHeader('admintoken', token)
+    }
+
     xhr.upload.onprogress = function (event) {
       if (event.lengthComputable && onProgress) {
         let percent = Math.round((event.loaded * 100) / event.total)

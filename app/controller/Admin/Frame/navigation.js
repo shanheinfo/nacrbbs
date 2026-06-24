@@ -91,23 +91,22 @@ export default {
     /* 新增导航信息 */
     addNavigation: (request, reply) => global.Fun(reply, async () => {
         const pre = request.body;
-
-        delete pre.n_index;
-        await global.db.insert('n_navigation', pre);
+        const NAV_FIELDS = ['n_name', 'n_url', 'n_fid', 'n_icon', 'n_target', 'n_type'];
+        const insertData = {};
+        NAV_FIELDS.forEach(field => { if (pre[field] !== undefined) insertData[field] = pre[field]; });
+        insertData.n_index = 0;
+        await global.db.insert('n_navigation', insertData);
         global.sendMsg(reply, 200, '操作成功');
     }),
     
     /* 编辑导航信息 */
     editNavigation: (request, reply) => global.Fun(reply, async () => {
         const pre = request.body;
-        delete pre.key
-        delete pre.n_fid_list
-
-        if(pre.n_index == 'null' || pre.n_index == null || !pre.n_index){
-            pre.n_index = 0
-        }
-
-        await global.db.update('n_navigation', pre, 'id = ?', [pre.id]);
+        const NAV_FIELDS = ['n_name', 'n_url', 'n_fid', 'n_icon', 'n_target', 'n_index', 'n_type'];
+        const updateData = {};
+        NAV_FIELDS.forEach(field => { if (pre[field] !== undefined) updateData[field] = pre[field]; });
+        if (updateData.n_index == null || updateData.n_index === 'null') updateData.n_index = 0;
+        await global.db.update('n_navigation', updateData, 'id = ?', [pre.id]);
         global.sendMsg(reply, 200, '操作成功');
     }),
     

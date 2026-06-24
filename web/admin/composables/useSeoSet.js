@@ -23,7 +23,7 @@ export const useSeoSet = ({
 
   useHead({
     title,
-    titleTemplate: (t) => t ? `${t} - Nacr` : 'Nacr',
+    titleTemplate: (t) => t ? `${t} - shanhe` : 'shanhe',
     meta: [
       { hid: 'description', name: 'description', content: description },
       { hid: 'og:title', property: 'og:title', content: title },

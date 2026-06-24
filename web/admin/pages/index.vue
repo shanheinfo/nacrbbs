@@ -22,7 +22,7 @@
                 <div class="ItemBox">
                     <div class="TopBox">
                         <!-- <p>{{currentPage.TopNavInfo.n_name}}</p> -->
-                        Nacr 后台管理系统
+                        shanhe 后台管理系统
                     </div>
                     <div :class="['Item', { ItemShow: currentPage.SecondNav == value.id }]" v-for="value in SecondNav"
                         @click="gopage(value)">
@@ -97,7 +97,7 @@
             <div class="footer">
                 <div class="footer-content">
                     <p class="copyright">
-                        Nacr ⓒ Nacr Copyright 2023-2029
+                        shanhe ⓒ shanhe Copyright 2023-2029
                     </p>
                     <div class="footer-links">
 
@@ -175,7 +175,7 @@ const gopage = (info, type = true) => {
         }
         navigateTo(info.n_path)
         useSeoSet({
-            title: info.n_name + ' - Nacr 后台管理系统'
+            title: info.n_name + ' - shanhe 后台管理系统'
         })
     }
 
@@ -201,7 +201,7 @@ const tryRecover = () => {
 
             navigateTo(config.currentPath[config.currentPath.length - 1].n_path)
             useSeoSet({
-                title: config.currentPath[config.currentPath.length - 1].n_name + ' - Cpen X 后台管理系统'
+                title: config.currentPath[config.currentPath.length - 1].n_name + ' - shanhe 后台管理系统'
             })
             // getSecondNav(config.currentPath[config.currentPath.length - 1],false)
             getTopNav()

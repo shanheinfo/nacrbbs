@@ -66,25 +66,32 @@ class Mysql {
 
     // 异步获取分页数据
     async getPaginatedData(table, conditionSql = '', conditionParams = [], sort = ['id', 'DESC'], page = 1, size = 20, exclude = []) {
-        // 计算偏移量
-        const offset = (page - 1) * size;
-
         // 获取字段
         const fields = await this.selectFields(table, exclude);
 
-        // 构建排序语句
+        // 构建排序语句（白名单校验排序方向，防止SQL注入）
         let orderClause = '';
+        const ALLOWED_DIR = ['ASC', 'DESC'];
         if (Array.isArray(sort[0])) {
             // 多字段排序 [['created_at', 'DESC'], ['id', 'ASC']]
-            orderClause = sort.map(([field, direction]) => `\`${field}\` ${direction}`).join(', ');
+            orderClause = sort.map(([field, direction]) => {
+                const dir = ALLOWED_DIR.includes(String(direction).toUpperCase()) ? String(direction).toUpperCase() : 'DESC';
+                return `\`${field}\` ${dir}`;
+            }).join(', ');
         } else {
             // 兼容旧格式 ['id', 'DESC']
-            orderClause = `\`${sort[0]}\` ${sort[1]}`;
+            const dir = ALLOWED_DIR.includes(String(sort[1]).toUpperCase()) ? String(sort[1]).toUpperCase() : 'DESC';
+            orderClause = `\`${sort[0]}\` ${dir}`;
         }
 
+        // 安全校验分页参数（已校验为安全整数，可直接拼接）
+        const safePage = Math.max(1, Number(page) || 1);
+        const safeSize = Math.min(100, Math.max(1, Number(size) || 20));
+        const offset = (safePage - 1) * safeSize;
+
         // 拼接查询语句
-        const dataSql = `SELECT ${fields} FROM \`${table}\` WHERE 1=1 ${conditionSql} ORDER BY ${orderClause} LIMIT ${offset}, ${size}`;
-        const data = await this.query(dataSql, [...conditionParams]);
+        const dataSql = `SELECT ${fields} FROM \`${table}\` WHERE 1=1 ${conditionSql} ORDER BY ${orderClause} LIMIT ${offset}, ${safeSize}`;
+        const data = await this.query(dataSql, conditionParams);
 
         // 查询总数
         const countSql = `SELECT COUNT(*) AS total FROM \`${table}\` WHERE 1=1 ${conditionSql}`;

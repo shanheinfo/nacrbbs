@@ -77,6 +77,12 @@
                         </div>
                         <p class="title">勋章中心</p>
                     </div>
+                    <div class="Item" @click="navigateTo('/user/apikey')">
+                        <div class="icon">
+                            <icon-lock />
+                        </div>
+                        <p class="title">API密钥</p>
+                    </div>
                     <div class="Item">
                         <div class="icon" @click="navigateTo('/user/Buylog')">
                             <icon-bookmark />

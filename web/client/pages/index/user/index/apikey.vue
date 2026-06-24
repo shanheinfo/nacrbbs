@@ -6,7 +6,9 @@
             <div class="create-section">
                 <div class="section-header">
                     <h3>创建新密钥</h3>
-                    <p class="section-desc">生成用于访问 REST API 的密钥，创建后仅显示一次完整密钥</p>
+                    <p class="section-desc">生成用于访问 REST API 的密钥，创建后仅显示一次完整密钥
+                        <a class="doc-link" @click="navigateTo('/user/apikey/doc')">查看接口文档 →</a>
+                    </p>
                 </div>
                 <div class="create-form">
                     <a-input v-model="createForm.n_name" placeholder="密钥名称，如：自动化脚本" class="form-input" />
@@ -360,6 +362,16 @@ const formatScopes = (scopesStr) => {
             font-size: 12px;
             color: #86868b;
             margin: 0;
+
+            .doc-link {
+                color: #00b42a;
+                cursor: pointer;
+                text-decoration: none;
+                margin-left: 8px;
+                &:hover {
+                    text-decoration: underline;
+                }
+            }
         }
     }
 

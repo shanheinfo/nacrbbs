@@ -28,17 +28,10 @@
             <!-- 项目信息 -->
             <div class="project-info">
                 <div class="project-title">
-                    <span>NacrBBS</span>
+                    <span>shanhe</span>
                 </div>
                 <div class="project-desc">
-                    开源轻量级论坛系统
-                </div>
-                <div class="project-links">
-                    <a-button type="text" size="small" @click="openGitee">Gitee</a-button>
-                    <span class="divider">|</span>
-                    <a-button type="text" size="small" @click="openGithub">GitHub</a-button>
-                    <span class="divider">|</span>
-                    <span class="star-text">⭐ 欢迎 Star</span>
+                    轻量级论坛系统
                 </div>
             </div>
 
@@ -65,20 +58,6 @@ const login = async () => {
         Message.error(res.msg)
     }
 }
-
-/* 打开 Gitee */
-const openGitee = () => {
-    window.open('https://gitee.com/wuaxcn/nacrbbs', '_blank')
-}
-
-/* 打开 GitHub */
-const openGithub = () => {
-    window.open('https://github.com/nacrcn/nacrbbs', '_blank')
-}
-
-
-
-
 
 
 </script>

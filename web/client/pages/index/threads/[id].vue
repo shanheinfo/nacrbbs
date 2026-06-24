@@ -127,9 +127,6 @@
                 <UserBox :id="Info.n_uid"></UserBox>
             </div>
             <div class="NavBar">
-                <NeedStar></NeedStar>
-            </div>
-            <div class="NavBar">
                 <BoxTitle>热门话题</BoxTitle>
 
                 <TopicItem v-for="value in TopicList" :key="value.n_name" :data="value"></TopicItem>

@@ -38,9 +38,6 @@
                 <BoxTitle>热门话题</BoxTitle>
                 <TopicItem v-for="value in TopicList" :key="value.n_name" :data="value"></TopicItem>
             </div>
-             <div class="NavBar">
-                <NeedStar></NeedStar>
-            </div>
         </div>
     </div>
 </template>

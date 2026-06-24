@@ -11,7 +11,8 @@ class Auth {
             encrypted += cipher.final('base64');
             return iv.toString('hex') + ':' + encrypted;
         }
-        info.endtime = Date.now() + 1000 * time;
+        // 计算过期时间：time为天数，转为毫秒
+        info.endtime = Date.now() + 1000 * 60 * 60 * 24 * time;
         info = JSON.stringify(info);
         return encrypt(info);
     }

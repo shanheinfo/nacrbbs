@@ -30,8 +30,10 @@
 </template>
 
 <script setup>
-
-
+/* 返回首页 */
+const handleGoHome = () => {
+    navigateTo('/')
+}
 </script>
 
 <style lang="scss" scoped>

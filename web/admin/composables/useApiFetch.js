@@ -1,13 +1,14 @@
-// composables/useApiFetch.js
+// composables/useApiFetch.js - 管理端API请求封装
 export function useApiFetch() {
   const config = useRuntimeConfig()
   const token = useCookie('AToken').value
   const apiBase = config.public.apiBase
+
+  // 将对象转为URL编码格式
   const toUrlEncoded = (obj) =>
     Object.keys(obj)
       .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(obj[key])}`)
       .join('&')
-
 
   const request = async (method, url, data = {}, headers = {}) => {
     const res = await useFetch(apiBase + url, {
@@ -24,17 +25,14 @@ export function useApiFetch() {
         ...headers,
       }
     })
-    try {
-      if (JSON.parse(res.data.value).code == 401) {
-        navigateTo('/login')
-      }
-
-      return JSON.parse(res.data.value) // 如果返回的是 JSON，Nuxt 会自动解析
-    } catch (e) {
-      return res.data.value
+    // Nuxt useFetch可能返回已解析对象或原始字符串，统一处理
+    const result = typeof res.data.value === 'string' ? JSON.parse(res.data.value) : res.data.value
+    // 401未授权时跳转登录页
+    if (result && result.code == 401) {
+      navigateTo('/login')
     }
+    return result
   }
-
 
   return {
     get: (url, data = {}, headers = {}) => request('GET', url, data, headers),
